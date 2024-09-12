@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.6
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Run tests
+        run: make test
+
+  dev-container-build:
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      name: cosi
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}

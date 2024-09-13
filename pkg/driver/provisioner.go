@@ -34,7 +34,7 @@ import (
 
 type provisionerServer struct {
 	Provisioner     string
-	Clientset       *kubernetes.Clientset
+	Clientset       kubernetes.Interface
 	KubeConfig      *rest.Config
 	BucketClientset bucketclientset.Interface
 }
@@ -168,7 +168,7 @@ func (s *provisionerServer) DriverRevokeBucketAccess(ctx context.Context,
 	return nil, status.Error(codes.Unimplemented, "DriverRevokeBucketAccess: not implemented")
 }
 
-func initializeObjectStorageProviderClients(ctx context.Context, clientset *kubernetes.Clientset, parameters map[string]string) (*s3client.S3Client, error) {
+func initializeObjectStorageProviderClients(ctx context.Context, clientset kubernetes.Interface, parameters map[string]string) (*s3client.S3Client, error) {
 	klog.V(3).InfoS("Initializing object storage provider clients", "parameters", parameters)
 
 	ospSecretName, namespace, err := fetchObjectStorageProviderSecretInfo(parameters)

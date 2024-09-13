@@ -40,6 +40,7 @@ type provisionerServer struct {
 }
 
 var _ cosispec.ProvisionerServer = &provisionerServer{}
+var initializeS3Client = initializeObjectStorageProviderClients
 
 func InitProvisionerServer(provisioner string) (cosispec.ProvisionerServer, error) {
 	klog.V(3).InfoS("Initializing ProvisionerServer", "provisioner", provisioner)
@@ -82,6 +83,8 @@ func InitProvisionerServer(provisioner string) (cosispec.ProvisionerServer, erro
 //	nil -                   Bucket successfully created
 //	codes.AlreadyExists -   Bucket already exists. No more retries
 //	non-nil err -           Internal error                                [requeue'd with exponential backoff]
+// Define a package-level variable pointing to the real function
+
 func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 	req *cosispec.DriverCreateBucketRequest) (*cosispec.DriverCreateBucketResponse, error) {
 
@@ -92,7 +95,7 @@ func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 
 	klog.V(5).InfoS("Request parameters", "parameters", parameters)
 
-	s3Client, err := initializeObjectStorageProviderClients(ctx, s.Clientset, parameters)
+	s3Client, err := initializeS3Client(ctx, s.Clientset, parameters)
 	if err != nil {
 		klog.ErrorS(err, "Failed to initialize object storage provider clients", "bucketName", bucketName)
 		return nil, status.Error(codes.Internal, "failed to initialize object storage provider s3 client")

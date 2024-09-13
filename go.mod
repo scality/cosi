@@ -12,7 +12,10 @@ require (
 	sigs.k8s.io/container-object-storage-interface-spec v0.1.0
 )
 
-require github.com/jmespath/go-jmespath v0.4.0 // indirect
+require (
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+)
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5

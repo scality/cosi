@@ -33,6 +33,14 @@ import (
 	cosispec "sigs.k8s.io/container-object-storage-interface-spec"
 )
 
+type s3Params struct {
+	AccessKey string
+	SecretKey string
+	Endpoint  string
+	Region    string
+	TLSCert   string // Optional field
+}
+
 type provisionerServer struct {
 	Provisioner     string
 	Clientset       kubernetes.Interface
@@ -187,22 +195,22 @@ func initializeObjectStorageProviderClients(ctx context.Context, clientset kuber
 		return nil, status.Error(codes.Internal, "failed to get object store user secret")
 	}
 
-	accessKey, secretKey, endpoint, region, _, err := fetchS3Parameters(ospSecret.Data)
+	s3Params, err := fetchS3Parameters(ospSecret.Data)
 	if err != nil {
 		klog.ErrorS(err, "Failed to fetch S3 parameters from secret", "secretName", ospSecretName)
 		return nil, err
 	}
 
-	s3Client, err := s3client.InitS3Client(accessKey, secretKey, endpoint, region, nil, true)
+	s3Client, err := s3client.InitS3Client(s3Params.AccessKey, s3Params.SecretKey, s3Params.Endpoint, s3Params.Region, nil, true)
 	if err != nil {
-		klog.ErrorS(err, "Failed to create S3 client", "endpoint", endpoint)
+		klog.ErrorS(err, "Failed to create S3 client", "endpoint", s3Params.Endpoint)
 		return nil, status.Error(codes.Internal, "failed to create S3 client")
 	}
-	klog.V(3).InfoS("Successfully initialized S3 client", "endpoint", endpoint)
+	klog.V(3).InfoS("Successfully initialized S3 client", "endpoint", s3Params.Endpoint)
 	return s3Client, nil
 }
 
-func fetchS3Parameters(secretData map[string][]byte) (string, string, string, string, string, error) {
+func fetchS3Parameters(secretData map[string][]byte) (*s3Params, error) {
 	klog.V(5).InfoS("Fetching S3 parameters from secret")
 
 	accessKey := string(secretData["COSI_S3_ACCESS_KEY_ID"])
@@ -212,12 +220,18 @@ func fetchS3Parameters(secretData map[string][]byte) (string, string, string, st
 
 	if endpoint == "" || accessKey == "" || secretKey == "" || region == "" {
 		klog.ErrorS(nil, "Missing required S3 parameters", "accessKey", accessKey != "", "secretKey", secretKey != "", "endpoint", endpoint != "", "region", region != "")
-		return "", "", "", "", "", status.Error(codes.InvalidArgument, "endpoint, accessKeyID, secretKey and region are required")
+		return nil, status.Error(codes.InvalidArgument, "endpoint, accessKeyID, secretKey and region are required")
 	}
 
 	tlsCert := string(secretData["COSI_S3_TLS_CERT_SECRET_NAME"]) // optional field if needed
 
-	return accessKey, secretKey, endpoint, region, tlsCert, nil
+	return &s3Params{
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+		Endpoint:  endpoint,
+		Region:    region,
+		TLSCert:   tlsCert,
+	}, nil
 }
 
 func fetchObjectStorageProviderSecretInfo(parameters map[string]string) (string, string, error) {

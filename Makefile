@@ -1,19 +1,18 @@
 APP_NAME = scality-cosi-driver
+BIN_DIR = ./bin
 
-.PHONY: all
+.PHONY: all build test clean
+
 all: test build
 
-.PHONY: build
 build:
 	@echo "Building $(APP_NAME)..."
-	GOOS=linux GOARCH=amd64 go build -o ./bin/$(APP_NAME) ./cmd/$(APP_NAME)
+	go build -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)
 
-.PHONY: test
 test:
 	@echo "Running tests..."
 	go test ./... -coverprofile=coverage.txt -covermode=atomic
 
-.PHONY: clean
 clean:
 	@echo "Cleaning up..."
-	rm -rf ./bin
+	rm -rf $(BIN_DIR)

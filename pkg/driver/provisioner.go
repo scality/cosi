@@ -17,10 +17,11 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	s3client "github.com/scality/cosi/pkg/util/s3client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -83,8 +84,6 @@ func InitProvisionerServer(provisioner string) (cosispec.ProvisionerServer, erro
 //	nil -                   Bucket successfully created
 //	codes.AlreadyExists -   Bucket already exists. No more retries
 //	non-nil err -           Internal error                                [requeue'd with exponential backoff]
-// Define a package-level variable pointing to the real function
-
 func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 	req *cosispec.DriverCreateBucketRequest) (*cosispec.DriverCreateBucketResponse, error) {
 
@@ -103,19 +102,23 @@ func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 
 	err = s3Client.CreateBucket(bucketName)
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok {
-			klog.V(4).InfoS("AWS error encountered", "code", awsErr.Code(), "message", awsErr.Message(), "bucketName", bucketName)
-			switch awsErr.Code() {
-			case s3.ErrCodeBucketAlreadyExists:
-				klog.V(3).InfoS("Bucket already exists", "bucketName", bucketName)
-				return nil, status.Errorf(codes.AlreadyExists, "Bucket already exists: %s", bucketName)
-			case s3.ErrCodeBucketAlreadyOwnedByYou:
-				klog.V(3).InfoS("Bucket already owned by you", "bucketName", bucketName)
-				return nil, status.Errorf(codes.AlreadyExists, "Bucket already owned by you: %s", bucketName)
+		var noSuchBucket *s3types.BucketAlreadyExists
+		var bucketOwnedByYou *s3types.BucketAlreadyOwnedByYou
+
+		if errors.As(err, &noSuchBucket) {
+			klog.V(3).InfoS("Bucket already exists", "bucketName", bucketName)
+			return nil, status.Errorf(codes.AlreadyExists, "Bucket already exists: %s", bucketName)
+		} else if errors.As(err, &bucketOwnedByYou) {
+			klog.V(3).InfoS("Bucket already owned by you", "bucketName", bucketName)
+			return nil, status.Errorf(codes.AlreadyExists, "Bucket already owned by you: %s", bucketName)
+		} else {
+			var opErr *smithy.OperationError
+			if errors.As(err, &opErr) {
+				klog.V(4).InfoS("AWS operation error encountered", "operation", opErr.OperationName, "message", opErr.Err.Error(), "bucketName", bucketName)
 			}
+			klog.ErrorS(err, "Failed to create bucket", "bucketName", bucketName)
+			return nil, status.Error(codes.Internal, "Failed to create bucket")
 		}
-		klog.ErrorS(err, "Failed to create bucket", "bucketName", bucketName)
-		return nil, status.Error(codes.Internal, "Failed to create bucket")
 	}
 
 	klog.V(3).InfoS("Successfully created bucket", "bucketName", bucketName)

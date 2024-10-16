@@ -17,17 +17,17 @@ limitations under the License.
 package s3client
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"k8s.io/klog/v2"
 )
 
@@ -36,29 +36,20 @@ const (
 	requestTimeout = 15 * time.Second
 )
 
-// S3Client wraps the s3iface.S3API structure to allow for custom methods
 type S3Client struct {
-	S3Service s3iface.S3API
+	S3Service *s3.Client
 }
 
-// InitS3Client initializes and returns a new S3Client instance
 func InitS3Client(accessKeyID, secretAccessKey, serviceEndpoint, region string, certData []byte, enableDebug bool) (*S3Client, error) {
-	loggingLevel := aws.LogOff
-	if enableDebug {
-		loggingLevel = aws.LogDebug
-	}
-
 	httpClient := http.Client{
 		Timeout: requestTimeout,
 	}
 
-	enableTLS := false
 	skipTLSValidation := false
 	if strings.HasPrefix(serviceEndpoint, "https") && len(certData) == 0 {
 		skipTLSValidation = true
 	}
 	if len(certData) > 0 || skipTLSValidation {
-		enableTLS = true
 		httpClient.Transport = configureTLSTransport(certData, skipTLSValidation)
 	}
 
@@ -66,28 +57,25 @@ func InitS3Client(accessKeyID, secretAccessKey, serviceEndpoint, region string, 
 		region = defaultRegion
 	}
 
-	awsSession, sessionErr := session.NewSession(
-		aws.NewConfig().
-			WithRegion(region).
-			WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")).
-			WithEndpoint(serviceEndpoint).
-			WithS3ForcePathStyle(true).
-			WithMaxRetries(5).
-			WithDisableSSL(!enableTLS).
-			WithHTTPClient(&httpClient).
-			WithLogLevel(loggingLevel),
+	// Custom AWS config with static credentials
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(region),
+		config.WithCredentialsProvider(aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""))),
+		config.WithHTTPClient(&httpClient),
 	)
-	if sessionErr != nil {
-		return nil, sessionErr
+	if err != nil {
+		return nil, err
 	}
 
-	s3Service := s3.New(awsSession)
+	s3Service := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
 	return &S3Client{
 		S3Service: s3Service,
 	}, nil
 }
 
-// CreateBucket attempts to create an S3 bucket with the provided name
 func (s *S3Client) CreateBucket(bucketName string) error {
 	klog.InfoS("Starting bucket creation", "bucketName", bucketName)
 
@@ -95,9 +83,14 @@ func (s *S3Client) CreateBucket(bucketName string) error {
 		Bucket: &bucketName,
 	}
 
-	_, creationErr := s.S3Service.CreateBucket(bucketParams)
-	if creationErr != nil {
-		return creationErr
+	_, err := s.S3Service.CreateBucket(context.TODO(), bucketParams)
+	if err != nil {
+		// Check for specific S3 errors
+		if strings.Contains(err.Error(), "BucketAlreadyExists") || strings.Contains(err.Error(), "BucketAlreadyOwnedByYou") {
+			klog.InfoS("Bucket already exists or owned by you", "bucketName", bucketName)
+			return nil // Return nil to indicate no error for idempotency
+		}
+		return err
 	}
 
 	klog.InfoS("Bucket creation succeeded", "bucketName", bucketName)

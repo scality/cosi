@@ -98,8 +98,8 @@ func (s *S3Client) CreateBucket(bucketName string) error {
 }
 
 // configureTLSTransport sets up the HTTP transport with TLS support
-func configureTLSTransport(certData []byte, skipTLS bool) *http.Transport {
-	tlsSettings := &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: skipTLS}
+func configureTLSTransport(certData []byte, skipVerify bool) *http.Transport {
+	tlsSettings := &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: skipVerify}
 
 	if len(certData) > 0 {
 		caCertPool := x509.NewCertPool()

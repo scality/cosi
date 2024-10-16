@@ -10,8 +10,9 @@ build:
 	go build -o $(BIN_DIR)/$(APP_NAME) ./cmd/$(APP_NAME)
 
 test:
-	@echo "Running tests..."
-	go test ./... -coverprofile=coverage.txt -covermode=atomic
+	@echo "Running Ginkgo tests..."
+	# Running Ginkgo tests recursively (-r) with verbose output (-v)
+	ginkgo -r -v --cover --coverprofile=coverage.txt
 
 clean:
 	@echo "Cleaning up..."

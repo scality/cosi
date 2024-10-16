@@ -15,7 +15,7 @@ jobs:
     with:
       name: cosi
       namespace: ${{ github.repository_owner }}
-      tag: ${{ github.event.inputs.tag }}
+      tag: ${{ inputs.tag }}
 
   create-github-release:
     runs-on: ubuntu-latest
@@ -26,6 +26,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.tag }}
+          target_commitish: ${{ github.sha }}
+          tag_name: ${{ inputs.tag }}
           name: Release ${{ github.event.inputs.tag }}
           generate_release_notes: true

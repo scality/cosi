@@ -12,10 +12,8 @@ import (
 )
 
 func TestDriverGetInfo(t *testing.T) {
-	// Define a long provisioner name to reuse in the test cases
 	longProvisioner := "scality-cosi-driver" + strings.Repeat("x", 1000)
 
-	// Define a table of test cases
 	tests := []struct {
 		name        string
 		provisioner string
@@ -64,13 +62,10 @@ func TestDriverGetInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create identityServer instance
 			server := newIdentityServer(tt.provisioner)
 
-			// Call DriverGetInfo with provided request
 			resp, err := server.DriverGetInfo(context.Background(), tt.request)
 
-			// Handle errors and assertions
 			if tt.wantErr {
 				assertErrorWithCode(t, err, tt.errCode)
 			} else {

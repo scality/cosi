@@ -40,8 +40,6 @@ type provisionerServer struct {
 	BucketClientset bucketclientset.Interface
 }
 
-var initializeS3Client = initializeObjectStorageProviderClients
-
 var _ cosiapi.ProvisionerServer = &provisionerServer{}
 
 func InitProvisionerServer(provisioner string) (cosiapi.ProvisionerServer, error) {
@@ -93,13 +91,13 @@ func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 	klog.V(3).InfoS("Received DriverCreateBucket request", "bucketName", bucketName)
 	klog.V(5).InfoS("Request parameters", "parameters", parameters)
 
-	s3Client, err := initializeS3Client(ctx, s.Clientset, parameters)
+	s3Client, s3Params, err := initializeObjectStorageClient(ctx, s.Clientset, parameters)
 	if err != nil {
 		klog.ErrorS(err, "Failed to initialize object storage provider clients", "bucketName", bucketName)
-		return nil, status.Error(codes.Internal, "failed to initialize object storage provider s3 client")
+		return nil, status.Error(codes.Internal, "failed to initialize object storage provider S3 client")
 	}
 
-	err = s3Client.CreateBucket(bucketName)
+	err = s3Client.CreateBucket(ctx, bucketName, *s3Params)
 	if err != nil {
 		var noSuchBucket *s3types.BucketAlreadyExists
 		var bucketOwnedByYou *s3types.BucketAlreadyOwnedByYou
@@ -125,35 +123,35 @@ func (s *provisionerServer) DriverCreateBucket(ctx context.Context,
 	}, nil
 }
 
-func initializeObjectStorageProviderClients(ctx context.Context, clientset kubernetes.Interface, parameters map[string]string) (*s3client.S3Client, error) {
+func initializeObjectStorageClient(ctx context.Context, clientset kubernetes.Interface, parameters map[string]string) (*s3client.S3Client, *s3client.S3Params, error) {
 	klog.V(3).InfoS("Initializing object storage provider clients", "parameters", parameters)
 
 	ospSecretName, namespace, err := fetchObjectStorageProviderSecretInfo(parameters)
 	if err != nil {
 		klog.ErrorS(err, "Failed to fetch object storage provider secret info")
-		return nil, err
+		return nil, nil, err
 	}
 
 	klog.V(4).InfoS("Fetching secret", "secretName", ospSecretName, "namespace", namespace)
 	ospSecret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, ospSecretName, metav1.GetOptions{})
 	if err != nil {
 		klog.ErrorS(err, "Failed to get object store user secret", "secretName", ospSecretName)
-		return nil, status.Error(codes.Internal, "failed to get object store user secret")
+		return nil, nil, status.Error(codes.Internal, "failed to get object store user secret")
 	}
 
 	s3Params, err := fetchS3Parameters(ospSecret.Data)
 	if err != nil {
 		klog.ErrorS(err, "Failed to fetch S3 parameters from secret", "secretName", ospSecretName)
-		return nil, err
+		return nil, nil, err
 	}
 
-	s3Client, err := s3client.InitS3Client(s3Params)
+	s3Client, err := s3client.InitS3Client(*s3Params)
 	if err != nil {
 		klog.ErrorS(err, "Failed to create S3 client", "endpoint", s3Params.Endpoint)
-		return nil, status.Error(codes.Internal, "failed to create S3 client")
+		return nil, nil, status.Error(codes.Internal, "failed to create S3 client")
 	}
 	klog.V(3).InfoS("Successfully initialized S3 client", "endpoint", s3Params.Endpoint)
-	return s3Client, nil
+	return s3Client, s3Params, nil // Returning both the client and the params
 }
 
 func fetchObjectStorageProviderSecretInfo(parameters map[string]string) (string, string, error) {
@@ -186,7 +184,6 @@ func fetchS3Parameters(secretData map[string][]byte) (*s3client.S3Params, error)
 		return nil, status.Error(codes.InvalidArgument, "endpoint, accessKeyID, secretKey and region are required")
 	}
 
-	// Fetch TLS certificate if present
 	var tlsCert []byte
 	if cert, exists := secretData["COSI_S3_TLS_CERT_SECRET_NAME"]; exists {
 		tlsCert = cert

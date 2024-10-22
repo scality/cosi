@@ -112,9 +112,7 @@ func ConfigureTLSTransport(certData []byte, skipTLSValidation bool) *http.Transp
 	}
 }
 
-func (client *S3Client) CreateBucket(bucketName string, params S3Params) error {
-	ctx := context.Background()
-
+func (client *S3Client) CreateBucket(ctx context.Context, bucketName string, params S3Params) error {
 	input := &s3.CreateBucketInput{
 		Bucket: &bucketName,
 	}

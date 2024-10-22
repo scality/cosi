@@ -2,9 +2,7 @@ FROM golang:1.23.2 AS builder
 
 WORKDIR /app
 
-ENV CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+ENV CGO_ENABLED=0
 
 COPY go.mod go.sum ./
 RUN go mod download

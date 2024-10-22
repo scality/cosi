@@ -114,7 +114,7 @@ var _ = Describe("S3Client", func() {
 			client.S3Service = mockS3
 		})
 
-		It("should successfully create a bucket in a non-us-east-1 region", func() {
+		It("should successfully create a bucket in a non-us-east-1 region", func(ctx SpecContext) {
 			mockS3.CreateBucketFunc = func(ctx context.Context, input *s3.CreateBucketInput, opts ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
 				Expect(input.Bucket).To(Equal(aws.String("new-bucket")))
 				Expect(input.CreateBucketConfiguration.LocationConstraint).To(Equal(types.BucketLocationConstraint("us-west-2")))
@@ -124,11 +124,11 @@ var _ = Describe("S3Client", func() {
 			client, _ := s3client.InitS3Client(params)
 			client.S3Service = mockS3
 
-			err := client.CreateBucket("new-bucket", params)
+			err := client.CreateBucket(ctx, "new-bucket", params)
 			Expect(err).To(BeNil())
 		})
 
-		It("should handle BucketAlreadyExists error correctly", func() {
+		It("should handle BucketAlreadyExists error correctly", func(ctx SpecContext) {
 			mockS3.CreateBucketFunc = func(ctx context.Context, input *s3.CreateBucketInput, opts ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
 				return nil, fmt.Errorf("BucketAlreadyExists: The requested bucket name is not available")
 			}
@@ -136,11 +136,11 @@ var _ = Describe("S3Client", func() {
 			client, _ := s3client.InitS3Client(params)
 			client.S3Service = mockS3
 
-			err := client.CreateBucket("existing-bucket", params)
+			err := client.CreateBucket(ctx, "existing-bucket", params)
 			Expect(err).To(BeNil())
 		})
 
-		It("should handle other errors correctly", func() {
+		It("should handle other errors correctly", func(ctx SpecContext) {
 			mockS3.CreateBucketFunc = func(ctx context.Context, input *s3.CreateBucketInput, opts ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
 				return nil, fmt.Errorf("SomeOtherError: Something went wrong")
 			}
@@ -148,7 +148,7 @@ var _ = Describe("S3Client", func() {
 			client, _ := s3client.InitS3Client(params)
 			client.S3Service = mockS3
 
-			err := client.CreateBucket("new-bucket", params)
+			err := client.CreateBucket(ctx, "new-bucket", params)
 			Expect(err).NotTo(BeNil())
 		})
 	})

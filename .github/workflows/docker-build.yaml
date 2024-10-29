@@ -1,0 +1,52 @@
+
+name: docker-build
+
+on:
+  workflow_call:
+    inputs:
+      windows:
+        description: "Run the Windows build"
+        required: false
+        type: boolean
+        default: false
+      linux-platforms:
+        description: "List of Linux platforms to build"
+        required: false
+        type: string
+        default: "linux/amd64"
+      tag:
+        description: "Tag to be released (e.g., v1.0.0)"
+        required: false
+        type: string
+        default: ${{ github.sha }}
+
+jobs:
+  windows-build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Build windows image
+        run: >
+          docker build
+          --tag ghcr.io/${{ github.repository }}:${{ github.sha }}
+          --platform=windows/amd64,linux/amd64,linux/arm64
+          --build-arg
+          .
+      - name: Push image
+        run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  # linux-build:
+  #   uses: scality/workflows/.github/workflows/docker-build.yaml@feature/PTFE-2104-support-platforms
+  #   with:
+  #     context: .
+  #     name: cosi
+  #     namespace: ${{ github.repository_owner }}
+  #     tag: ${{ github.sha }}
+  #     platforms: linux/amd64, linux/arm64

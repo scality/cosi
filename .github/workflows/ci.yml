@@ -62,5 +62,4 @@ jobs:
       name: cosi
       namespace: ${{ github.repository_owner }}
       tag: ${{ github.sha }}
-      platforms: ${{ matrix.build.platform }}
-      runner: ${{ matrix.build.runner }}
+      platforms: ${{ matrix.platforms }}

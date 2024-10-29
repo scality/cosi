@@ -36,12 +36,17 @@ jobs:
     uses: scality/workflows/.github/workflows/docker-build.yaml@feature/PTFE-2104-support-platforms
     strategy:
       matrix:
-        platforms:
-          - linux/amd64
-          - linux/arm64
+        build:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-latest
+          - platform: windows/amd64
+            runner: windows-2022
     with:
       context: .
       name: cosi
       namespace: ${{ github.repository_owner }}
       tag: ${{ github.sha }}
       platforms: ${{ matrix.platforms }}
+      runner: ${{ 

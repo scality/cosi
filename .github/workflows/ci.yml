@@ -48,6 +48,7 @@ jobs:
           docker build
           --tag ghcr.io/${{ github.repository }}:${{ github.sha }}
           --platform=windows/amd64
+          --build-arg TARGETOS=windows
           .
       - name: Push image
         run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}

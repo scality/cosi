@@ -37,7 +37,7 @@ spec:
         emptyDir: {}
       containers:
       - name: scality-cosi-driver
-        image: $(SCALITY_IMAGE_ORG)/scality-cosi-driver:$(SCALITY_IMAGE_VERSION)
+        image: $(SCALITY_IMAGE_ORG):$(SCALITY_IMAGE_VERSION)
         imagePullPolicy: IfNotPresent
         args:
           - "--driver-prefix=cosi"

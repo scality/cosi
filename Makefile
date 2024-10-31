@@ -1,7 +1,9 @@
-APP_NAME = scality-cosi-driver
+APP_NAME = scality-cosi-driver   # Go application name
 BIN_DIR = ./bin
+IMAGE_TAG=latest  # Docker image name
+DOCKERFILE = Dockerfile
 
-.PHONY: all build test clean
+.PHONY: all build test clean container
 
 all: test build
 
@@ -17,3 +19,7 @@ test:
 clean:
 	@echo "Cleaning up..."
 	rm -rf $(BIN_DIR)
+
+container:
+	@echo "Building Docker image $(APP_NAME)..."
+	docker build -t ghcr.io/scality/cosi:latest .

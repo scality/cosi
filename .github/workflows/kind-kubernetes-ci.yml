@@ -15,8 +15,7 @@ jobs:
       - name: Create k8s KIND Cluster
         uses: helm/kind-action@v1.10.0
         with:
-          version: latest
-          kubectl_version: latest
+          version: v0.21.0
           wait: 90s
 
       - name: Verify KIND cluster is running

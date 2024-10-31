@@ -45,13 +45,31 @@ jobs:
       # Step 5: Verify COSI Controller Pod Status
       - name: Verify COSI Controller Pod is running
         run: |
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=container-object-storage-interface-controller -n default --timeout=120s
-          kubectl get pods -n default | grep objectstorage-controller
+          kubectl wait --namespace default \
+          --for=condition=ready pod \
+          -l app.kubernetes.io/name=container-object-storage-interface-controller \
+          --timeout=10s
+          kubectl get pods --namespace default
 
       - name: Build cosi driver image
         run: |
-          docker build -t github.com/scality/cosi:latest .
+          docker build -t ghcr.io/scality/cosi:latest .
 
       - name: Load cosi driver image into KIND cluster
         run: |
-          kind load docker-image github.com/scality/cosi:latest --name object-storage-cluster
+          kind load docker-image ghcr.io/scality/cosi:latest --name object-storage-cluster
+
+      - name: Run COSI driver
+        run: |
+          kubectl apply -k .
+
+      - name: Verify COSI driver Pod is running
+        run: |
+          |
+          kubectl wait --namespace scality-object-storage \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/name=scality-cosi-driver \
+            --timeout=20s
+          kubectl get pods -n scality-object-storage
+
+      

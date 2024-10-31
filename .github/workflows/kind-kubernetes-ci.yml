@@ -65,7 +65,6 @@ jobs:
 
       - name: Verify COSI driver Pod is running
         run: |
-          |
           kubectl wait --namespace scality-object-storage \
             --for=condition=ready pod \
             --selector=app.kubernetes.io/name=scality-cosi-driver \

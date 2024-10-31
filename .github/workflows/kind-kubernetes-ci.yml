@@ -17,6 +17,7 @@ jobs:
         with:
           version: v0.21.0
           wait: 90s
+          cluster_name: object-storage-cluster
 
       - name: Verify KIND cluster is running
         run: |

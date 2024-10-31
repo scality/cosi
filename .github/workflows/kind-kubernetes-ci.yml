@@ -1,0 +1,47 @@
+name: KIND Kubernetes CI
+
+on:
+    push:
+      branches:
+        - '**'
+
+jobs:
+  create-cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Create k8s KIND Cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: latest
+          kubectl_version: latest
+          wait: 90s
+
+      - name: Verify KIND cluster is running
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Deploy Hello World pod
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: hello-world
+          spec:
+            containers:
+            - name: hello-world
+              image: busybox
+              command: ['sh', '-c', 'echo Hello, Kubernetes! && sleep 3600']
+          EOF
+
+      - name: Wait for Hello World pod to be running
+        run: |
+          kubectl wait --for=condition=ready pod/hello-world --timeout=60s
+
+      - name: Verify Hello World pod output
+        run: |
+          kubectl logs hello-world | grep "Hello, Kubernetes!"

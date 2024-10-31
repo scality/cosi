@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: scality-cosi-driver
 spec:
-  replicas: 1  # Set directly here since we’re simplifying
+  replicas: 1  # Overlays expansion will eventually change this to 3
   selector:
     matchLabels:
       app.kubernetes.io/name: scality-cosi-driver
@@ -23,7 +23,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "--driver-prefix=cosi"
-            - "--v=5"
+            - "--v=3"
           volumeMounts:
             - mountPath: /var/lib/cosi
               name: socket

@@ -47,3 +47,11 @@ jobs:
         run: |
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=container-object-storage-interface-controller -n default --timeout=120s
           kubectl get pods -n default | grep objectstorage-controller
+
+      - name: Build cosi driver image
+        run: |
+          docker build -t github.com/scality/cosi:latest .
+
+      - name: Load cosi driver image into KIND cluster
+        run: |
+          kind load docker-image github.com/scality/cosi:latest --name object-storage-cluster

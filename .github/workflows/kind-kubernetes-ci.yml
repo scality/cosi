@@ -1,9 +1,16 @@
 name: KIND Kubernetes CI
 
 on:
-    push:
-      branches:
-        - '**'
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 
 jobs:
   create-cluster:
@@ -23,6 +30,12 @@ jobs:
         run: |
           kubectl cluster-info
           kubectl get nodes
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        with:
+          detached: true
 
       # Step 4: Install CRDs and COSI Controller
       - name: Install COSI CRDs

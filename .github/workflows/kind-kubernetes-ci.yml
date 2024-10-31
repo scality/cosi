@@ -33,5 +33,5 @@ jobs:
       # Step 5: Verify COSI Controller Pod Status
       - name: Verify COSI Controller Pod is running
         run: |
-          kubectl wait --for=condition=ready pod -l app=objectstorage-controller -n default --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=container-object-storage-interface-controller -n default --timeout=120s
           kubectl get pods -n default | grep objectstorage-controller

@@ -36,3 +36,9 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       with:
         detached: true
+
+    - name: Setup COSI-Driver
+      run: |
+        pwd
+        chmod +x .github/scripts/setup_cosi_driver.sh
+        .github/scripts/setup_cosi_driver.sh

@@ -2,7 +2,7 @@
 set -e
 
 # Define log file for debugging
-LOG_FILE=".github/e2e_tests/artifacts/logs/kind_cluster_logs/cosi_driver/cleanup_debug.log"
+LOG_FILE=".github/e2e_tests/artifacts/logs/kind_cluster_logs/cosi_deployment/cleanup_debug.log"
 mkdir -p "$(dirname "$LOG_FILE")"  # Ensure the log directory exists
 
 # Error handling function
@@ -34,6 +34,22 @@ if kubectl get namespace scality-object-storage &>/dev/null; then
 fi
 
 # Step 3: Delete COSI CRDs
+log_and_run echo "Removing Finalizers from Bucket Claim and Bucket"
+log_and_run kubectl patch bucketclaim my-bucket-claim  -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Bucket Claim finalizers not found." | tee -a "$LOG_FILE"
+
+# Get all bucket names
+BUCKET_NAMES=$(kubectl get bucket -o jsonpath='{.items[*].metadata.name}')
+
+# Iterate over each bucket and remove finalizers
+for BUCKET_NAME in $BUCKET_NAMES; do
+  log_and_run echo "Removing finalizers from bucket: $BUCKET_NAME"
+  log_and_run kubectl patch bucket "$BUCKET_NAME" -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Finalizers not found for bucket: $BUCKET_NAME" | tee -a "$LOG_FILE"
+done
+
+log_and_run echo "Deleting Bucket Claim and Bucket Class..."
+log_and_run kubectl delete -f cosi-examples/bucketclass.yaml || echo "Bucket Class not found." | tee -a "$LOG_FILE"
+log_and_run kubectl delete -f cosi-examples/bucketclaim.yaml || echo "Bucket Claim not found." | tee -a "$LOG_FILE"
+
 log_and_run echo "Deleting COSI CRDs..."
 log_and_run kubectl delete -k github.com/kubernetes-sigs/container-object-storage-interface-api || echo "COSI API CRDs not found." | tee -a "$LOG_FILE"
 log_and_run kubectl delete -k github.com/kubernetes-sigs/container-object-storage-interface-controller || echo "COSI Controller CRDs not found." | tee -a "$LOG_FILE"

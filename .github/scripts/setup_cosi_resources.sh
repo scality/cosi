@@ -2,7 +2,7 @@
 set -e
 
 # Define log file for debugging
-LOG_FILE=".github/e2e_tests/artifacts/logs/kind_cluster_logs/cosi_driver/setup_debug.log"
+LOG_FILE=".github/e2e_tests/artifacts/logs/kind_cluster_logs/cosi_deployment/setup_debug.log"
 mkdir -p "$(dirname "$LOG_FILE")"  # Ensure the log directory exists
 
 # Error handling function

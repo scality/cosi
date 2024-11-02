@@ -8,7 +8,7 @@ on:
     inputs:
       debug_enabled:
         type: boolean
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: 'Run the build with tmate debugging enabled'
         required: false
         default: false
 
@@ -18,6 +18,13 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
+
+    - name: Load Environment Variables
+      run: |
+        set -a
+        source .github/s3_and_iam_deployment/.env
+        set -a
+      shell: bash
 
     - name: Create k8s KIND Cluster
       uses: helm/kind-action@v1.10.0
@@ -33,7 +40,6 @@ jobs:
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
-      # comment below line to enable tmate on push
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       with:
         detached: true
@@ -51,6 +57,22 @@ jobs:
         username: "${{ secrets.ANURAG_USERNAME }}"
         password: "${{ secrets.ANURAG_PAT }}"
 
+    - name: Cache Docker Images
+      id: cache_docker_images
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.docker_cache
+        key: docker-${{ runner.os }}-${{ hashFiles('.github/s3_and_iam_deployment/.env') }}
+        restore-keys: |
+          docker-${{ runner.os }}-
+
+    - name: Load Cached Images
+      run: |
+        for image in /tmp/.docker_cache/*.tar; do
+          docker load -i "$image" || true
+        done
+      continue-on-error: true
+
     - name: Setup IAM and S3 Services
       run: |-
         set -e -o pipefail;
@@ -59,6 +81,17 @@ jobs:
         bash ../scripts/wait_for_local_port.bash 8600 30
         bash ../scripts/wait_for_local_port.bash 8000 30
       working-directory: .github/s3_and_iam_deployment
+
+    - name: Save Images to Cache
+      if: steps.cache_docker_images.outputs.cache-hit != 'true'
+      run: |
+        source .github/s3_and_iam_deployment/.env
+        echo "Vault Image: $VAULT_IMAGE"
+        echo "CloudServer Image: $CLOUDSERVER_IMAGE"
+        mkdir -p /tmp/.docker_cache
+        docker save "$VAULT_IMAGE" -o /tmp/.docker_cache/vault_image.tar
+        docker save "$CLOUDSERVER_IMAGE" -o /tmp/.docker_cache/cloudserver_image.tar
+      shell: bash
 
     - name: Cleaup IAM and S3 Services
       run: docker compose --profile iam_s3 down
@@ -76,6 +109,7 @@ jobs:
       run: |
         chmod +x .github/scripts/capture_k8s_logs.sh
         .github/scripts/capture_k8s_logs.sh
+      if: always()
 
     - name: Cleanup COSI Setup
       run: |

@@ -33,6 +33,7 @@ jobs:
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
+      # comment below line to enable tmate on push
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       with:
         detached: true
@@ -42,3 +43,52 @@ jobs:
         pwd
         chmod +x .github/scripts/setup_cosi_driver.sh
         .github/scripts/setup_cosi_driver.sh
+
+    - name: Login to Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: "${{ secrets.ANURAG_USERNAME }}"
+        password: "${{ secrets.ANURAG_PAT }}"
+
+    - name: Setup IAM and S3 Services
+      run: |-
+        set -e -o pipefail;
+        mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb && chown -R runner:docker logs data && chmod -R ugo+rwx logs data
+        docker compose --profile iam_s3 up -d --quiet-pull
+        bash ../scripts/wait_for_local_port.bash 8600 30
+        bash ../scripts/wait_for_local_port.bash 8000 30
+      working-directory: .github/s3_and_iam_deployment
+
+    - name: Cleaup IAM and S3 Services
+      run: docker compose --profile iam_s3 down
+      working-directory: .github/s3_and_iam_deployment
+
+    - name: Move logs to folder
+      run: |-
+        set -e -o pipefail;
+        mkdir -p .github/e2e_tests/artifacts/logs .github/e2e_tests/artifacts/data
+        cp -r .github/s3_and_iam_deployment/logs/* .github/e2e_tests/artifacts/logs/
+        cp -r .github/s3_and_iam_deployment/data/* .github/e2e_tests/artifacts/data/
+      if: always()
+
+    - name: Capture Kubernetes Logs
+      run: |
+        chmod +x .github/scripts/capture_k8s_logs.sh
+        .github/scripts/capture_k8s_logs.sh
+
+    - name: Cleanup COSI Setup
+      run: |
+        chmod +x .github/scripts/cleanup_cosi_driver.sh
+        .github/scripts/cleanup_cosi_driver.sh
+      if: always()
+
+    - name: Upload logs to artifacts
+      uses: scality/action-artifacts@v4
+      with:
+        method: upload
+        url: https://artifacts.scality.net
+        user: ${{ secrets.ARTIFACTS_USER }}
+        password: ${{ secrets.ARTIFACTS_PASSWORD }}
+        source: .github/e2e_tests/artifacts
+      if: always()

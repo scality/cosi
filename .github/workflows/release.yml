@@ -36,7 +36,6 @@ jobs:
       - name: Package Helm Chart
         run: |
           helm package ./helm/scality-cosi-driver --version ${{ inputs.tag }} --app-version ${{ inputs.tag }}
-          mv scality-cosi-driver-${{ inputs.tag }}.tgz scality-cosi-driver-${{ inputs.tag }}.tgz
 
   # Job 3: Create Docker Image Info File (Depends on Docker build)
   create-docker-info:

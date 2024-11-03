@@ -19,7 +19,7 @@ jobs:
       name: cosi
       namespace: ${{ github.repository_owner }}
       tag: ${{ inputs.tag }}
-      platforms: linux/amd64,linux/arm64
+      # platforms: linux/amd64,linux/arm64
 
   # Job 2: Package Helm Chart (Runs independently of Docker build)
   package-helm-chart:

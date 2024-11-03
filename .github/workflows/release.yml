@@ -6,6 +6,7 @@ on:
       tag:
         description: "Tag to be released (e.g., v1.0.0)"
         required: true
+
 jobs:
   prod-container-build:
     permissions:
@@ -19,16 +20,45 @@ jobs:
       tag: ${{ inputs.tag }}
       platforms: linux/amd64,linux/arm64
 
-  create-github-release:
+  create-docker-info:
     runs-on: ubuntu-latest
     needs: prod-container-build
     steps:
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Docker Image Info File
+        run: echo "ghcr.io/${{ github.repository_owner }}/cosi:${{ inputs.tag }}" > docker-image-info.txt
+
+  package-helm-chart:
+    runs-on: ubuntu-latest
+    needs: prod-container-build
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v1
         with:
-          target_commitish: ${{ github.sha }}
+          version: v3.7.1
+
+      - name: Package Helm Chart
+        run: |
+          helm package ./helm/scality-cosi-driver --version ${{ inputs.tag }} --app-version ${{ inputs.tag }}
+          mv scality-cosi-driver-${{ inputs.tag }}.tgz scality-cosi-driver-${{ inputs.tag }}.tgz
+
+  create-github-release:
+    runs-on: ubuntu-latest
+    needs: [create-docker-info, package-helm-chart]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Upload Assets and Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            docker-image-info.txt
+            scality-cosi-driver-${{ inputs.tag }}.tgz
           tag_name: ${{ inputs.tag }}
           name: Release ${{ inputs.tag }}
-          generate_release_notes: true
+          body: "Release for tag ${{ inputs.tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

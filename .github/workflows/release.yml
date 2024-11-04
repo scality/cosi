@@ -80,6 +80,11 @@ jobs:
         run: |
           helm repo index . --url https://scality.github.io/cosi/
 
+      - name: Configure Git for Committing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Commit and Push to gh-pages
         run: |
           git add index.yaml scality-cosi-driver-${{ inputs.tag }}.tgz

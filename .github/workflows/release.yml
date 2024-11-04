@@ -76,10 +76,6 @@ jobs:
         with:
           name: helm-chart
 
-      - name: Move Helm Chart to gh-pages Directory
-        run: |
-          mv scality-cosi-driver-${{ inputs.tag }}.tgz .
-
       - name: Update index.yaml
         run: |
           helm repo index . --url https://scality.github.io/cosi/

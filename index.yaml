@@ -1,0 +1,13 @@
+apiVersion: v1
+entries:
+  scality-cosi-driver:
+  - apiVersion: v2
+    appVersion: 0.1.0-beta-PW.7
+    created: "2024-11-04T01:12:47.494841+01:00"
+    description: A Helm chart for deploying the Scality COSI Driver
+    digest: b673d2b6b089f7982b7a04a11093be19f1e470f86e961486466784d5ffc742ed
+    name: scality-cosi-driver
+    urls:
+    - https://scality.github.io/cosi/scality-cosi-driver-0.1.0-beta-PW.7.tgz
+    version: 0.1.0-beta-PW.7
+generated: "2024-11-04T01:12:47.494566+01:00"

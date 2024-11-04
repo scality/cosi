@@ -18,7 +18,7 @@ This command will add the `scality-cosi-driver` repository and fetch the latest 
 To install the Scality COSI Driver chart from the repository, use the following command:
 
 ```bash
-helm install my-release scality-cosi-driver/scality-cosi-driver --version 0.1.0-beta-PW.7 --namespace scality-object-storage --create-namespace
+helm install my-release scality-cosi-driver/scality-cosi-driver --version 0.1.0-beta-PW.10 --namespace scality-object-storage --create-namespace
 ```
 
 Replace `my-release` with your desired release name. This command will:

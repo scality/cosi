@@ -1,4 +1,4 @@
-package provisioner_test
+package grpcfactory_test
 
 import (
 	"context"
@@ -6,12 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/scality/cosi/pkg/provisioner"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"github.com/scality/cosi/pkg/grpcfactory"
 	cosi "sigs.k8s.io/container-object-storage-interface-spec"
 )
 
@@ -25,7 +24,7 @@ type MockProvisionerServer struct {
 
 var _ = Describe("COSIProvisionerClient", func() {
 	var (
-		client     *provisioner.COSIProvisionerClient
+		client     *grpcfactory.COSIProvisionerClient
 		grpcServer *grpc.Server
 		listener   net.Listener
 		address    string
@@ -77,7 +76,7 @@ var _ = Describe("COSIProvisionerClient", func() {
 			}
 
 			var err error
-			client, err = provisioner.NewCOSIProvisionerClient(ctx, address, dialOpts, nil)
+			client, err = grpcfactory.NewCOSIProvisionerClient(ctx, address, dialOpts, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(client).NotTo(BeNil())
 			Expect(client.IdentityClient).NotTo(BeNil())
@@ -87,7 +86,7 @@ var _ = Describe("COSIProvisionerClient", func() {
 
 	Describe("Interface Implementation", func() {
 		It("should implement cosi.IdentityClient and cosi.ProvisionerClient interfaces", func() {
-			client = &provisioner.COSIProvisionerClient{
+			client = &grpcfactory.COSIProvisionerClient{
 				IdentityClient:    cosi.NewIdentityClient(nil),
 				ProvisionerClient: cosi.NewProvisionerClient(nil),
 			}
@@ -102,7 +101,7 @@ var _ = Describe("COSIProvisionerClient", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			client, err := provisioner.NewDefaultCOSIProvisionerClient(ctx, address, true)
+			client, err := grpcfactory.NewDefaultCOSIProvisionerClient(ctx, address, true)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(client).NotTo(BeNil())
 		})
@@ -111,7 +110,7 @@ var _ = Describe("COSIProvisionerClient", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			client, err := provisioner.NewDefaultCOSIProvisionerClient(ctx, address, false)
+			client, err := grpcfactory.NewDefaultCOSIProvisionerClient(ctx, address, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(client).NotTo(BeNil())
 		})
@@ -123,7 +122,7 @@ var _ = Describe("COSIProvisionerClient", func() {
 			defer cancel()
 
 			// Attempt to connect using an invalid address format
-			_, err := provisioner.NewCOSIProvisionerClient(ctx, "invalid-address", nil, nil)
+			_, err := grpcfactory.NewCOSIProvisionerClient(ctx, "invalid-address", nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unsupported scheme"))
 		})

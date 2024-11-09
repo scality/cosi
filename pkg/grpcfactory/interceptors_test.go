@@ -1,4 +1,4 @@
-package provisioner_test
+package grpcfactory_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/scality/cosi/pkg/provisioner"
+	"github.com/scality/cosi/pkg/grpcfactory"
 	"google.golang.org/grpc"
 )
 
@@ -35,7 +35,7 @@ var _ = Describe("Interceptors", func() {
 				return nil
 			}
 
-			err := provisioner.ApiLogger(ctx, method, req, reply, cc, invoker)
+			err := grpcfactory.ApiLogger(ctx, method, req, reply, cc, invoker)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -45,7 +45,7 @@ var _ = Describe("Interceptors", func() {
 				return errors.New("invocation failed")
 			}
 
-			err := provisioner.ApiLogger(ctx, method, req, reply, cc, invoker)
+			err := grpcfactory.ApiLogger(ctx, method, req, reply, cc, invoker)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("invocation failed"))
 		})

@@ -1,4 +1,4 @@
-package provisioner_test
+package grpcfactory_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/scality/cosi/pkg/provisioner"
+	"github.com/scality/cosi/pkg/grpcfactory"
 	cosi "sigs.k8s.io/container-object-storage-interface-spec"
 )
 
@@ -34,7 +34,7 @@ var _ = Describe("Provisioner", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			client, err := provisioner.NewDefaultCOSIProvisionerClient(ctx, address, true)
+			client, err := grpcfactory.NewDefaultCOSIProvisionerClient(ctx, address, true)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(client).NotTo(BeNil())
 		})
@@ -43,7 +43,7 @@ var _ = Describe("Provisioner", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			client, err := provisioner.NewDefaultCOSIProvisionerClient(ctx, "http://localhost", false)
+			client, err := grpcfactory.NewDefaultCOSIProvisionerClient(ctx, "http://localhost", false)
 			Expect(err).To(HaveOccurred())
 			Expect(client).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("unsupported scheme"))
@@ -52,20 +52,20 @@ var _ = Describe("Provisioner", func() {
 
 	Describe("NewCOSIProvisionerServer", func() {
 		It("should initialize a server with valid arguments", func() {
-			server, err := provisioner.NewCOSIProvisionerServer(address, mockIdentityServer, mockProvisionerServer, nil)
+			server, err := grpcfactory.NewCOSIProvisionerServer(address, mockIdentityServer, mockProvisionerServer, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(server).NotTo(BeNil())
 		})
 
 		It("should return an error if identity server is nil", func() {
-			server, err := provisioner.NewCOSIProvisionerServer(address, nil, mockProvisionerServer, nil)
+			server, err := grpcfactory.NewCOSIProvisionerServer(address, nil, mockProvisionerServer, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(server).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("Identity server cannot be nil"))
 		})
 
 		It("should return an error if provisioner server is nil", func() {
-			server, err := provisioner.NewCOSIProvisionerServer(address, mockIdentityServer, nil, nil)
+			server, err := grpcfactory.NewCOSIProvisionerServer(address, mockIdentityServer, nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(server).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("Provisioner server cannot be nil"))

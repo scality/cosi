@@ -1,4 +1,4 @@
-package provisioner_test
+package grpcfactory_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestCosiDev(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Provisioner Test Suite")
+	RunSpecs(t, "gRPC Factory Test Suite")
 }

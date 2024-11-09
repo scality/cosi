@@ -1,4 +1,4 @@
-package provisioner_test
+package grpcfactory_test
 
 import (
 	"context"
@@ -7,10 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/scality/cosi/pkg/provisioner"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/scality/cosi/pkg/grpcfactory"
 	cosi "sigs.k8s.io/container-object-storage-interface-spec"
 )
 
@@ -34,7 +33,7 @@ var _ = Describe("COSIProvisionerServer", func() {
 		address           string
 		identityServer    cosi.IdentityServer
 		provisionerServer cosi.ProvisionerServer
-		server            *provisioner.COSIProvisionerServer
+		server            *grpcfactory.COSIProvisionerServer
 	)
 
 	BeforeEach(func() {
@@ -55,7 +54,7 @@ var _ = Describe("COSIProvisionerServer", func() {
 	Describe("Run", func() {
 		It("should start the server and return no error", func() {
 			var err error
-			server, err = provisioner.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
+			server, err = grpcfactory.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(server).NotTo(BeNil())
 
@@ -89,7 +88,7 @@ var _ = Describe("COSIProvisionerServer", func() {
 			server2Ctx, server2Cancel := context.WithCancel(context.Background())
 			defer server2Cancel()
 
-			server2, err := provisioner.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
+			server2, err := grpcfactory.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(server2).NotTo(BeNil())
 
@@ -112,7 +111,7 @@ var _ = Describe("COSIProvisionerServer", func() {
 		})
 
 		It("should handle unexpected shutdowns by canceling the context", func() {
-			server, err := provisioner.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
+			server, err := grpcfactory.NewCOSIProvisionerServer(address, identityServer, provisionerServer, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(server).NotTo(BeNil())
 

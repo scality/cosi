@@ -25,22 +25,32 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func apiLogger(ctx context.Context, api string,
-	req, resp interface{},
-	grpcConn *grpc.ClientConn,
-	apiCall grpc.UnaryInvoker,
-	opts ...grpc.CallOption) error {
-
-	if jsonReq, err := json.MarshalIndent(req, "", " "); err != nil {
-		klog.InfoS("Request", "api", api, "req", string(jsonReq))
+func apiLogger(
+	ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
+	opts ...grpc.CallOption,
+) error {
+	// Log the request
+	if jsonReq, err := json.MarshalIndent(req, "", " "); err == nil {
+		klog.InfoS("Request", "api", method, "req", string(jsonReq))
+	} else {
+		klog.ErrorS(err, "Failed to marshal request", "api", method)
 	}
 
 	start := time.Now()
-	err := apiCall(ctx, api, req, resp, grpcConn, opts...)
-	end := time.Now()
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	elapsed := time.Since(start)
 
-	if jsonRes, err := json.MarshalIndent(resp, "", " "); err != nil {
-		klog.InfoS("Response", "api", api, "elapsed", end.Sub(start), "resp", jsonRes)
+	// Log the response or error
+	if err != nil {
+		klog.ErrorS(err, "API call failed", "api", method, "elapsed", elapsed)
+	} else if jsonResp, err := json.MarshalIndent(reply, "", " "); err == nil {
+		klog.InfoS("Response", "api", method, "elapsed", elapsed, "resp", string(jsonResp))
+	} else {
+		klog.ErrorS(err, "Failed to marshal response", "api", method)
 	}
 
 	return err

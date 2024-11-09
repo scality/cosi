@@ -29,6 +29,12 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   dev-container-build:
     permissions:
       contents: read
